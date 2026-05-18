@@ -1,0 +1,46 @@
+
+
+OBODO OLUCHUKWU FRANCISCA
+DATA ANALYTICS EXAM
+CASE STUDY 2
+Case Study 2 — Predictive Modelling & Segmentation 
+Theme: Building models that predict outcomes and discover hidden groups • 
+  Overview Machine learning transforms data into decisions. In this case study you will move beyond description and inference to build predictive and segmentation models on your own data. You will demonstrate that you understand not just how to run a model, but how to evaluate it, explain it, and connect its output to a concrete business action. You will also show that unsupervised techniques can reveal structure that supervised methods assume away. 
+Requird Technique 1 Classification Model 2 Model Evaluation & Explainability 3 Customer/Entity Segmentation (Clustering) 4 Dimensionality Reduction 5 Time Series Analysis Ch. 12–15 — Logistic regression, decision tree, random forest, or XGBoost Ch. 12, 16 — Confusion matrix, ROC/AUC, SHAP values, LIME, feature importance Ch. 19–21 — K-Means, hierarchical, DBSCAN; silhouette score; cluster profiling Ch. 22 — PCA, t-SNE, or UMAP; biplot; variance explained Ch. 23–24 — Decomposition, stationarity test, ARIMA or ET
+
+ Business Challenge and Objectives
+As the Business Manager for a leading food company, I have observed significant volatility in sales performance over the past three years (2023–2025). While certain customers continue to deliver consistently high revenue, others show clear signs of decline. To ensure sustainable growth, there is an urgent need to:
+Accurately predict which customers are likely to grow, remain stable, or churn over the next 3–5 years.
+Segment the customer base effectively to tailor strategies by group.
+Identify the key drivers of sales performance.
+Deepen understanding of customer preferences and behaviour.
+Forecast future demand to support proactive decision-making, resource allocation, and strategic planning.
+These insights will strengthen customer retention, enable the setting of realistic monthly and quarterly sales targets, and facilitate data-driven growth strategies in an increasingly competitive market.
+
+
+Primary Datasets
+1. Customer Survey A structured survey titled “Understanding Customer Preferences to Serve You Better” was administered to 190 respondents (distributors and retailers). The questionnaire consisted of 10 questions covering:
+Customer location and demographics
+Income levels
+Key purchase decision factors, including Quality, Taste, Packaging, Brand Awareness, and Purchasing Power
+The survey was conducted via WhatsApp links and supported by sales representatives across various markets. Locations were grouped into three major zones: East, North West, and South, using a central reference point for consistency.
+2. Sales Transaction Data Three years of historical sales data (2023–2025), aggregated monthly at the individual customer level. This dataset provides a complete view of purchase volume, value, and frequency per customer over the period.
+Data Provenance Notes
+The survey was completed within five days among active distributors and retailers across selected markets. Sales data was extracted from the company’s internal systems and is made available for analytical and academic purposes. All numerical sales figures remain confidential and are not for publication.
+Core Business Question
+What is the most important factor influencing customers’ purchase decisions for our products in an increasingly competitive market?
+
+
+The overarching goal is to develop robust predictive models that can:
+Forecast future sales at the customer level.
+Uncover hidden trends and patterns in buying behaviour.
+Support customer retention initiatives.
+Enable accurate target setting (monthly and quarterly).
+Inform strategic planning for long-term business growth and sustainability.
+
+
+
+
+
+
+
