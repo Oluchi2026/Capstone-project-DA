@@ -1,0 +1,229 @@
+/* ============================================================
+   oluchi_report.css — LBS EMBA Capstone: Oluchi Frances
+   Theme: Deep purple / violet academic
+   Distinct from: Abiba (amber/brown serif) & Nomso (teal sans)
+   ============================================================ */
+
+/* ── Typography ─────────────────────────────────────────── */
+body {
+  font-family: Georgia, "Palatino Linotype", Palatino, "Times New Roman", serif;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: #1a1a2e;
+  background-color: #faf9fc;
+}
+
+/* ── Headings ────────────────────────────────────────────── */
+h1, h2, h3, h4 {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  color: #3b1f6e;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 2rem;
+  border-bottom: 3px solid #5e3d8f;
+  padding-bottom: 0.35em;
+  margin-bottom: 1em;
+}
+
+h2 {
+  font-size: 1.45rem;
+  border-left: 5px solid #5e3d8f;
+  padding-left: 0.6em;
+  margin-top: 2em;
+  background: linear-gradient(90deg, rgba(94,61,143,0.06) 0%, transparent 80%);
+}
+
+h3 {
+  font-size: 1.15rem;
+  color: #5e3d8f;
+  border-bottom: 1px dashed #c4a8e8;
+  padding-bottom: 0.2em;
+}
+
+h4 {
+  font-size: 1rem;
+  color: #7b52b5;
+}
+
+/* ── Table of Contents ───────────────────────────────────── */
+#TOC {
+  background-color: #f3eefe;
+  border-right: 3px solid #c4a8e8;
+  padding: 1.2em 1em;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
+  font-size: 0.88rem;
+}
+
+#TOC .toc-title {
+  color: #3b1f6e;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.6em;
+}
+
+#TOC a {
+  color: #5e3d8f;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+#TOC a:hover {
+  color: #3b1f6e;
+  text-decoration: underline;
+}
+
+/* Active TOC entry */
+#TOC .active > a {
+  font-weight: 700;
+  color: #3b1f6e;
+  border-left: 3px solid #5e3d8f;
+  padding-left: 0.4em;
+}
+
+/* ── Links ───────────────────────────────────────────────── */
+a {
+  color: #5e3d8f;
+}
+
+a:hover {
+  color: #3b1f6e;
+  text-decoration: underline;
+}
+
+/* ── Code blocks ─────────────────────────────────────────── */
+pre, code {
+  font-family: "Fira Code", "Source Code Pro", "Cascadia Code", Consolas, monospace;
+  font-size: 0.87em;
+}
+
+pre.sourceCode {
+  background-color: #f0eafa;
+  border-left: 4px solid #9b72cf;
+  border-radius: 4px;
+  padding: 1em 1.2em;
+}
+
+code:not(pre > code) {
+  background-color: #ede8f7;
+  color: #5e3d8f;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.2em 0;
+  font-size: 0.93em;
+}
+
+th {
+  background-color: #5e3d8f;
+  color: #ffffff;
+  text-align: left;
+  padding: 0.55em 0.8em;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
+  font-size: 0.88em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+td {
+  padding: 0.45em 0.8em;
+  border-bottom: 1px solid #ddd3f0;
+}
+
+tr:nth-child(even) td {
+  background-color: #f5f0fc;
+}
+
+tr:hover td {
+  background-color: #ede6f9;
+}
+
+/* ── Callouts ────────────────────────────────────────────── */
+.callout {
+  border-radius: 5px;
+  margin: 1.4em 0;
+}
+
+.callout-note {
+  border-left: 5px solid #5e3d8f;
+  background-color: #f3eefe;
+}
+
+.callout-note .callout-header {
+  background-color: #e8dff9;
+  color: #3b1f6e;
+}
+
+.callout-warning {
+  border-left: 5px solid #c77dff;
+}
+
+.callout-tip {
+  border-left: 5px solid #7b52b5;
+  background-color: #f8f4ff;
+}
+
+/* ── Blockquote ──────────────────────────────────────────── */
+blockquote {
+  border-left: 4px solid #9b72cf;
+  background-color: #f5f0fc;
+  padding: 0.7em 1.2em;
+  margin: 1.2em 0;
+  color: #3b1f6e;
+  font-style: italic;
+}
+
+/* ── Panel tabset ────────────────────────────────────────── */
+.panel-tabset .nav-tabs .nav-link {
+  color: #5e3d8f;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.panel-tabset .nav-tabs .nav-link.active {
+  color: #3b1f6e;
+  background-color: #f3eefe;
+  border-color: #c4a8e8 #c4a8e8 #f3eefe;
+  border-bottom-color: #f3eefe;
+}
+
+.panel-tabset .tab-content {
+  border: 1px solid #c4a8e8;
+  border-top: none;
+  padding: 1.2em;
+  background-color: #faf9fc;
+}
+
+/* ── Figures / captions ──────────────────────────────────── */
+figure > figcaption,
+.figure-caption {
+  font-size: 0.85em;
+  color: #7b52b5;
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.35em;
+}
+
+/* ── Horizontal rule ─────────────────────────────────────── */
+hr {
+  border: none;
+  border-top: 2px solid #c4a8e8;
+  margin: 2.5em 0;
+}
+
+/* ── Print overrides ─────────────────────────────────────── */
+@media print {
+  #TOC { display: none; }
+  body { font-size: 11pt; background: white; color: black; }
+  h1, h2, h3, h4 { color: black; }
+  pre.sourceCode { background: #f9f9f9; border-left: 3px solid #999; }
+}
