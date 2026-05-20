@@ -1,7 +1,7 @@
 # Customer Analytics: Segmentation, Customer Value Classification, and Commercial Engagement Strategy
 
-**Author:** Oluchi Frances  
-**Programme:** LBS Executive MBA — Analytics Capstone  
+**Author:** OOLUCHUKWU FRANCISCA OBODO    
+**Programme:** MBA — DATA ANALYTICS CAPSTONE PROJECT 
 **Rendered output:** [`oluchi_capstone.html`](oluchi_capstone.html)
 
 ---

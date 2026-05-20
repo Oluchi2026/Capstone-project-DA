@@ -1,6 +1,6 @@
 ---
 title: "Predicting Customer Value and Uncovering Purchase Patterns: A Data Driven Approach to Commercial Segmentation in Food Manufacturing & Distribution"
-author: "Oluchi Frances"
+author: "OLUCHUKWU FRANCISCA OBODO"
 date: today
 format:
   html:
@@ -19,7 +19,7 @@ execute:
 
 ```{r setup, include=FALSE}
 if (requireNamespace("reticulate", quietly = TRUE)) {
-  venv_python <- "/Users/user/Documents/LandMan/UA High/LBA -EMBA -Nomso/.venv/bin/python"
+  venv_python <- "/.venv/bin/python"
   if (file.exists(venv_python)) {
     reticulate::use_python(venv_python, required = FALSE)
   }
