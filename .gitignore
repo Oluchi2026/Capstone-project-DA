@@ -1,0 +1,40 @@
+# macOS / editor
+.DS_Store
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# R / Quarto local artifacts
+.Rhistory
+.RData
+.Rproj.user/
+.quarto/
+*_files/
+
+# Secrets / env
+.env
+.env.*
+
+# Keep data folder structure, ignore data files
+data/**
+!data/
+!data/.gitkeep
+!data/raw/
+data/raw/**
+!data/raw/.gitkeep
+!data/processed/
+data/processed/**
+!data/processed/.gitkeep
+
+# Large/raw source data (anywhere)
+*.csv
+*.xlsx
+*.xls
+*.tsv
+*.parquet

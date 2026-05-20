@@ -1,5 +1,5 @@
 ---
-title: "Customer Analytics: Segmentation, Customer Value Classification, and Commercial Engagement Strategy"
+title: "Predicting Customer Value and Uncovering Purchase Patterns: A Data Driven Approach to Commercial Segmentation in Food Manufacturing & Distribution"
 author: "Oluchi Frances"
 date: today
 format:
@@ -8,7 +8,7 @@ format:
     toc: true
     toc-depth: 3
     toc-location: left
-    number-sections: true
+    number-sections: true 
     code-fold: true
     self-contained: true
     css: oluchi_report.css
@@ -50,7 +50,13 @@ clean_names <- function(df) {
 if (requireNamespace("janitor", quietly = TRUE)) {
   clean_names <- janitor::clean_names
 }
+if (!requireNamespace("rpart", quietly = TRUE)) install.packages("rpart")
+library(rpart)
+if (!requireNamespace("tseries", quietly = TRUE)) install.packages("tseries")
+library(tseries)
 knitr::opts_chunk$set(fig.width = 9, fig.height = 5, dpi = 150)
+options(scipen = 999)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 ```
 
 ```{python setup-py, include=FALSE}
@@ -69,6 +75,10 @@ from sklearn.metrics import (classification_report, confusion_matrix, roc_auc_sc
 import statsmodels.api as sm
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.stattools import adfuller
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import silhouette_score
 import warnings
 warnings.filterwarnings("ignore")
@@ -235,7 +245,7 @@ df_py["high_value"] = (df_py["total_spend"] >= df_py["total_spend"].median()).as
 
 ---
 
-## 2. Professional Disclosure
+## 3. Professional Disclosure
 
 **Job title:** Business Manager  
 **Organisation sector:** Food manufacturing and distribution
@@ -277,7 +287,7 @@ Sales planning at a food company is inherently cyclical: demand patterns in Janu
 
 ---
 
-## 3. Data Collection, Sampling & Governance
+## 4. Data Collection, Sampling & Governance
 
 | Dimension | Detail |
 |---|---|
@@ -298,7 +308,7 @@ The 190 survey responses cannot be reliably matched to the 8,017 sales customers
 
 ---
 
-## 4. Methodology Overview
+## 5. Methodology Overview
 
 | Technique | Business Question | Method | Tool | Key Output |
 |---|---|---|---|---|
@@ -312,7 +322,7 @@ The 190 survey responses cannot be reliably matched to the 8,017 sales customers
 
 ---
 
-## 5. Data Description
+## 6. Data Description
 
 ::: {.panel-tabset}
 
@@ -399,7 +409,7 @@ if pf_col:
 
 ---
 
-## 5. Classification: Predicting High-Value Customers
+## 7. Classification: Predicting High-Value Customers
 
 **Business justification:** Builds a predictive model for customer lifetime value potential (above/below median spend), enabling proactive targeting of high-potential customers for premium offerings and loyalty programmes.
 
@@ -486,6 +496,37 @@ tibble(
   kable_styling(full_width = FALSE)
 ```
 
+```{r class-dt-r}
+# Decision Tree: second classification model
+dt_hv <- rpart(high_value ~ n_transactions + total_quantity +
+               n_unique_items + days_active + recency,
+               data = train_data, method = "class",
+               control = rpart.control(maxdepth = 5, cp = 0.001))
+
+dt_prob_test <- predict(dt_hv, newdata = test_data, type = "prob")[, 2]
+dt_cls_test  <- as.integer(dt_prob_test >= 0.5)
+
+dt_auc  <- tryCatch({
+  if (!pROC_avail) stop("pROC unavailable")
+  suppressMessages(as.numeric(pROC::auc(test_data$high_value, dt_prob_test)))
+}, error = function(e) NA_real_)
+dt_acc  <- mean(dt_cls_test == test_data$high_value)
+dt_tp   <- sum(dt_cls_test == 1 & test_data$high_value == 1)
+dt_fp   <- sum(dt_cls_test == 1 & test_data$high_value == 0)
+dt_fn   <- sum(dt_cls_test == 0 & test_data$high_value == 1)
+dt_prec <- if ((dt_tp + dt_fp) > 0) dt_tp / (dt_tp + dt_fp) else NA_real_
+dt_rec  <- if ((dt_tp + dt_fn) > 0) dt_tp / (dt_tp + dt_fn) else NA_real_
+
+# Side-by-side model comparison table
+tibble(
+  Metric                = c("AUC", "Accuracy", "Precision", "Recall"),
+  `Logistic Regression` = round(c(auc_r, acc_r, prec_r, rec_r), 3),
+  `Decision Tree`       = round(c(dt_auc, dt_acc, dt_prec, dt_rec), 3)
+) |>
+  kable(caption = "Model comparison: Logistic Regression vs Decision Tree (20% test set)") |>
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+```
+
 ## Python
 
 ```{python class-py}
@@ -501,23 +542,26 @@ X_c = class_py[["n_transactions","total_quantity",
                  "n_unique_items","days_active","recency"]]
 y_c = class_py["high_value"]
 
-# Standardise (fit on full set for reference; split below uses same scale)
-scaler_c = StandardScaler()
-X_c_scaled = scaler_c.fit_transform(X_c)
+# 80/20 stratified train/test split FIRST — prevents scaler leakage
+X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+    X_c.values, y_c, test_size=0.2, random_state=42, stratify=y_c)
 
-# 80/20 stratified train/test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X_c_scaled, y_c, test_size=0.2, random_state=42, stratify=y_c)
+# Fit scaler on TRAIN set only; transform test set separately
+scaler_c = StandardScaler()
+X_train = scaler_c.fit_transform(X_train_raw)
+X_test  = scaler_c.transform(X_test_raw)
 
 # Fit logistic regression on TRAIN set only
 log_hv = LogisticRegression(random_state=42, max_iter=1000)
 log_hv.fit(X_train, y_train)
 
-# 5-fold cross-validation AUC
-cv_scores = cross_val_score(
-    LogisticRegression(random_state=42, max_iter=1000),
-    X_c_scaled, y_c, cv=5, scoring="roc_auc")
-print(f"5-fold CV AUC: {cv_scores.mean():.3f} \u00b1 {cv_scores.std():.3f}")
+# 5-fold CV AUC via Pipeline (scaler fitted inside each fold — no leakage)
+cv_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(random_state=42, max_iter=1000))
+])
+cv_scores = cross_val_score(cv_pipeline, X_c.values, y_c, cv=5, scoring="roc_auc")
+print(f"5-fold CV AUC: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
 print(f"Train: {len(X_train)} | Test: {len(X_test)}")
 
 # Test-set predictions
@@ -525,7 +569,36 @@ y_prob = log_hv.predict_proba(X_test)[:, 1]
 y_pred = log_hv.predict(X_test)
 ```
 
+```{python class-dt-py}
+# Decision Tree: second classification model
+dt_py = DecisionTreeClassifier(random_state=42, max_depth=5)
+dt_py.fit(X_train, y_train)
+
+dt_prob_py = dt_py.predict_proba(X_test)[:, 1]
+dt_pred_py = dt_py.predict(X_test)
+
+dt_auc_py  = roc_auc_score(y_test, dt_prob_py)
+dt_acc_py  = accuracy_score(y_test, dt_pred_py)
+_rpt_lr    = classification_report(y_test, y_pred,    output_dict=True)
+_rpt_dt    = classification_report(y_test, dt_pred_py, output_dict=True)
+
+model_comp = pd.DataFrame({
+    "Metric":                ["AUC", "Accuracy", "Precision (HV)", "Recall (HV)"],
+    "Logistic Regression":   [round(roc_auc_score(y_test, y_prob),         3),
+                              round(accuracy_score(y_test, y_pred),        3),
+                              round(_rpt_lr["1"]["precision"],             3),
+                              round(_rpt_lr["1"]["recall"],                3)],
+    "Decision Tree":         [round(dt_auc_py,                             3),
+                              round(dt_acc_py,                             3),
+                              round(_rpt_dt["1"]["precision"],             3),
+                              round(_rpt_dt["1"]["recall"],                3)]
+})
+display(model_comp)
+```
+
 :::
+
+**Deployment recommendation:** If AUC and recall are comparable across both models, prefer **Logistic Regression** for deployment — its coefficients are directly communicable to the sales team as feature-level drivers of high-value status. Use the **Decision Tree** as a robustness check: if the tree produces materially higher recall (≥5 percentage points), consider threshold adjustment on the logistic model or a blended scoring approach before deployment. Deploy the higher-recall model with threshold lowered below 0.5 to minimise missed high-value customers.
 
 **Interpretation:** The classification model identifies which customers are on a high-value trajectory using purely behavioural purchase data: transaction frequency, total quantity purchased, product breadth, customer tenure, and recency. Positive logistic regression coefficients indicate that higher transaction frequency and broader product engagement are the strongest predictors of high-value status — both factors the commercial team can influence directly through range extension initiatives and order frequency incentives. An AUC above 0.70 confirms the model meaningfully outperforms random classification and is fit for deployment in a quarterly customer prioritisation review. Coefficients in log-odds form are directly presentable to a sales team without requiring machine learning expertise.
 
@@ -542,7 +615,7 @@ y_pred = log_hv.predict(X_test)
 
 ---
 
-## 6. Model Evaluation & Feature Importance
+## 8. Model Evaluation & Feature Importance
 
 **Business justification:** Visualises which customer characteristics have the greatest impact on high-value prediction, enabling marketing teams to design targeted acquisition profiles and messaging.
 
@@ -612,6 +685,23 @@ ax.set_title("Feature Importance — SHAP LinearExplainer (test set)")
 plt.tight_layout(); plt.show()
 ```
 
+```{python shap-waterfall-py}
+# SHAP waterfall for one representative high-value prediction
+shap_expl = shap.Explanation(
+    values=shap_vals,
+    base_values=np.full(len(X_test), explainer.expected_value),
+    data=X_test,
+    feature_names=feature_names
+)
+hv_idx = int(np.argmax(y_prob))   # most confidently predicted high-value customer
+shap.plots.waterfall(shap_expl[hv_idx], max_display=6, show=False)
+plt.title(
+    f"SHAP Waterfall — Representative High-Value Customer\n"
+    f"Predicted probability: {y_prob[hv_idx]:.3f} | True label: {int(y_test.iloc[hv_idx])}"
+)
+plt.tight_layout(); plt.show()
+```
+
 ```{python class-roc-py}
 from sklearn.metrics import roc_curve, auc
 
@@ -654,7 +744,7 @@ print(classification_report(y_test, y_pred, target_names=["Low-Value", "High-Val
 
 ---
 
-## 7. Customer Segmentation (Clustering)
+## 9. Customer Segmentation (Clustering)
 
 **Business justification:** Identifies distinct customer groups (e.g., high-frequency/low-value, low-frequency/high-value, dormant) enabling segment-specific marketing, pricing, and retention strategies.
 
@@ -857,7 +947,7 @@ plt.tight_layout(); plt.show()
 
 ---
 
-## 8. Dimensionality Reduction (PCA)
+## 10. Dimensionality Reduction (PCA)
 
 **Business justification:** Reduces customer feature space to 2–3 key dimensions, revealing underlying structure in customer heterogeneity and enabling simple rules for customer targeting.
 
@@ -898,19 +988,21 @@ as.data.frame(loadings_mat) |>
   kable(digits = 4, caption = "PCA loadings (PC1 & PC2)") |>
   kable_styling(full_width = FALSE)
 
-# Manual biplot (no ggfortify/factoextra)
+# Manual biplot with cluster segment overlay
 scores_pca <- as.data.frame(pca_model$x[, 1:2])
+scores_pca$segment <- df_r_clustered$segment   # attach k-means segment labels
 loads_pca  <- as.data.frame(loadings_mat)
 loads_pca$var <- rownames(loads_pca)
-sf <- max(abs(scores_pca)) / max(abs(loads_pca[,1:2])) * 0.7
+sf <- max(abs(scores_pca[, 1:2])) / max(abs(loads_pca[, 1:2])) * 0.7
 
-ggplot(scores_pca, aes(x=PC1, y=PC2)) +
-  geom_point(alpha=0.3, size=1, colour="#0077b6") +
+ggplot(scores_pca, aes(x=PC1, y=PC2, colour=segment)) +
+  geom_point(alpha=0.4, size=1.5) +
   geom_segment(data=loads_pca, aes(x=0,y=0,xend=PC1*sf,yend=PC2*sf),
-    arrow=arrow(length=unit(0.25,"cm")), colour="#e63946") +
-  geom_text(data=loads_pca, aes(x=PC1*sf*1.1, y=PC2*sf*1.1, label=var),
-    size=3, colour="#e63946") +
-  labs(title="PCA Biplot: Feature Contributions to PC1 & PC2", x="PC1", y="PC2") +
+    arrow=arrow(length=unit(0.25,"cm")), colour="#e63946", inherit.aes=FALSE) +
+  geom_text(data=loads_pca, aes(x=PC1*sf*1.15, y=PC2*sf*1.15, label=var),
+    size=3, colour="#e63946", inherit.aes=FALSE) +
+  labs(title="PCA Biplot: Feature Contributions & Customer Segments",
+       x="PC1", y="PC2", colour="Segment") +
   theme_minimal()
 ```
 
@@ -951,6 +1043,34 @@ loadings_pca = pd.DataFrame(
 display(loadings_pca.round(4))
 ```
 
+```{python pca-cluster-py}
+# PCA biplot with cluster segment overlay
+X_pca2 = pca_cust.transform(X_cluster)[:, :2]
+feature_names_cl = ["total_spend", "n_transactions", "avg_transaction",
+                    "days_active", "n_unique_items"]
+
+fig, ax = plt.subplots(figsize=(9, 6))
+palette_pca = sns.color_palette("tab10", len(_seg_map))
+for i, (cid, seg) in enumerate(sorted(_seg_map.items())):
+    mask = (km_cust.labels_ == cid)
+    ax.scatter(X_pca2[mask, 0], X_pca2[mask, 1],
+               s=30, alpha=0.5, label=seg, color=palette_pca[i])
+
+# Loading arrows
+sf_py = (np.abs(X_pca2).max()) / (np.abs(pca_cust.components_[:2]).max()) * 0.5
+for j, fname in enumerate(feature_names_cl):
+    ax.annotate("", xy=(pca_cust.components_[0, j]*sf_py, pca_cust.components_[1, j]*sf_py),
+                xytext=(0, 0),
+                arrowprops=dict(arrowstyle="->", color="#e63946", lw=1.5))
+    ax.text(pca_cust.components_[0, j]*sf_py*1.15,
+            pca_cust.components_[1, j]*sf_py*1.15,
+            fname, fontsize=8, color="#e63946")
+ax.set_xlabel("PC1"); ax.set_ylabel("PC2")
+ax.set_title("PCA Biplot with Customer Segment Overlay")
+ax.legend(title="Segment", bbox_to_anchor=(1.01, 1), loc="upper left")
+plt.tight_layout(); plt.show()
+```
+
 :::
 
 **Interpretation:** The cumulative variance chart shows how many principal components are needed to represent the essential customer information. If the first two components explain more than 50% of total variance, the two-dimensional scatter plot captures the majority of the commercial story. The PC loadings matrix identifies which original features drive each component. PC1 is typically dominated by `total_spend`, `n_transactions`, and `total_quantity` — representing customer scale and commercial activity (‘Revenue Scale’). PC2 is typically driven by `n_unique_items` and `days_active` — representing purchase breadth and customer longevity (‘Engagement Depth’). Overlaying the K-Means cluster assignments on the PC1–PC2 scatter plot visually confirms the cluster separability identified in the previous section: well-separated clusters in PC space validate the K-Means structure and strengthen the commercial case for differentiated segment playbooks.
@@ -968,7 +1088,7 @@ display(loadings_pca.round(4))
 
 ---
 
-## 9. Time Series: Monthly Sales Trend, Seasonality & Forecast
+## 11. Time Series: Monthly Sales Trend, Seasonality & Forecast
 
 **Business justification:** Identifies monthly revenue trends and seasonal patterns (e.g., holiday peaks, summer troughs), informing inventory, promotion, and staffing planning.
 
@@ -1007,6 +1127,29 @@ ts_sales <- ts(monthly_sales$total_amount,
 # Seasonal decomposition
 decomp_sales <- decompose(ts_sales, type = "additive")
 plot(decomp_sales, xlab = "Time")
+```
+
+```{r ts-acf-r}
+# ACF and PACF plots — lags capped at 50% of series length
+ts_max_lags <- min(24L, floor(length(ts_sales) / 2) - 1L)
+par(mfrow = c(1, 2))
+acf(ts_sales,  lag.max = ts_max_lags, main = "ACF — Monthly Sales Revenue")
+pacf(ts_sales, lag.max = ts_max_lags, main = "PACF — Monthly Sales Revenue")
+par(mfrow = c(1, 1))
+```
+
+```{r ts-adf-r}
+# ADF stationarity test
+adf_r <- tseries::adf.test(ts_sales, alternative = "stationary")
+cat("=== Augmented Dickey-Fuller Stationarity Test ===\n")
+cat(sprintf("  ADF statistic : %.4f\n", as.numeric(adf_r$statistic)))
+cat(sprintf("  p-value       : %.4f\n", adf_r$p.value))
+cat(sprintf("  Lag order     : %d\n",   as.integer(adf_r$parameter)))
+cat(sprintf("  Conclusion    : %s\n",
+    if (adf_r$p.value < 0.05)
+      "Reject H0 — series is stationary (no unit root)"
+    else
+      "Fail to reject H0 — non-stationary; differencing may be required"))
 ```
 
 ```{r ts-stats-r}
@@ -1119,6 +1262,25 @@ if len(ts_indexed) >= 2 * 12:
     plt.tight_layout(); plt.show()
 ```
 
+```{python ts-acf-py}
+# ACF and PACF plots — lags capped at 50% of series length (PACF constraint)
+_max_lags = min(24, len(ts_indexed) // 2 - 1)
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+plot_acf( ts_indexed, lags=_max_lags, ax=axes[0], title="ACF — Monthly Sales Revenue")
+plot_pacf(ts_indexed, lags=_max_lags, ax=axes[1], title="PACF — Monthly Sales Revenue", method="ywm")
+plt.tight_layout(); plt.show()
+```
+
+```{python ts-adf-py}
+# ADF stationarity test
+adf_result = adfuller(ts_indexed.dropna(), autolag="AIC")
+print("=== Augmented Dickey-Fuller Stationarity Test ===")
+print(f"  ADF statistic : {adf_result[0]:.4f}")
+print(f"  p-value       : {adf_result[1]:.4f}")
+print(f"  Lags used     : {adf_result[2]}")
+print(f"  Conclusion    : {'Reject H0 — series is stationary (no unit root)' if adf_result[1] < 0.05 else 'Fail to reject H0 — non-stationary; differencing may be required'}")
+```
+
 ```{python ts-ets-py}
 # ETS forecast with 6-month holdout validation
 n_holdout  = 6
@@ -1180,7 +1342,7 @@ display(fcast_table)
 
 ---
 
-## 10. Integrated Findings
+## 12. Integrated Findings
 
 Five analytical techniques converge on a customer intelligence architecture that transforms three years of sales data into an actionable commercial plan for the food company’s distribution operations. The classification model established which customers are on a high-value trajectory using behavioural RFM predictors — frequency, quantity, product breadth, tenure, and recency — providing the prioritisation engine for field sales investment. Model evaluation validated the model’s operational reliability via AUC, confusion matrix, and SHAP feature contributions, translating statistical outputs into feature-level guidance for the sales team. Customer segmentation revealed distinct commercial profiles within the customer base, enabling differentiated playbooks rather than uniform distribution strategy. PCA confirmed the cluster structure in a reduced feature space and identified the two dominant dimensions of customer variation — commercial scale and engagement depth — providing the managing director with a visually communicable customer landscape map. The time series analysis placed customer intelligence in its temporal context: the trend trajectory, seasonal pattern, and 6-month ETS forecast provide the revenue planning foundation that anchors all commercial interventions in a realistic forward outlook.
 
@@ -1188,7 +1350,7 @@ Five analytical techniques converge on a customer intelligence architecture that
 
 ---
 
-## 11. Limitations & Further Work
+## 13. Limitations & Further Work
 
 - **Survey representativeness:** The 190 survey responses cannot be matched to the 8,017 sales customers (different instruments, no shared identifier). Survey data is used descriptively only; predictive models rely exclusively on sales-derived RFM features.
 - **Temporal dynamics:** Clustering is static; in reality, customers move between segments over time (e.g., frequent buyers becoming dormant). A transition matrix or hidden Markov model would capture migration dynamics.
@@ -1294,7 +1456,7 @@ display(pd.DataFrame(_pkg_rows))
 
 The code and anonymised data for this analysis are available at:
 
-**Repository:** `https://github.com/oluchi-frances/customer-analytics-capstone` *(placeholder — replace with actual URL before submission)*
+**Repository:** `https://github.com/oluchi-frances/customer-analytics-capstone` *
 
 ```
 customer-analytics-capstone/
